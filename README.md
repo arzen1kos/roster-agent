@@ -15,37 +15,57 @@
 
 </div>
 
-## Branch Notes: `feature/ward-roster-agent-lab`
+## Branch Notes: `lab/roster-lab`
 
 **Branched from:** `dev`
 
 **Merges into:** `dev`
 
-**Goal**
-A simple agent lab that updates a single ward's roster on a timer. Real cadence is fortnightly (`14.00:00:00`); demo cadence is every 2 minutes (`00:02:00`). Staff names and dates are hardcoded for now.
+**Purpose**
+A proof of concept for an agentic roster updater for a single ward. On a timer, an LLM proposes a roster. Deterministic C# rules check it, and the agent retries until it’s valid. This is the base for later work, not a finished product.
 
-> The LLM proposes, plain C# validates, retry up to 3 times, then fall back to a deterministic greedy roster.
+**Details**
 
-**Configuration**
-| Setting | Real | Demo |
-|---|---|---|
-| `Roster:Interval` | `14.00:00:00` | `00:02:00` |
-| `Roster:WindowDays` | 14 | 3 |
-| `Ollama:Model` | `llama3.1:8b` | `llama3.2:3b` |
+- **Scope**: single ward, hardcoded staff (18 names with skill levels) and hardcoded rules.
+- **Constraints**: slot capacity `AM=5`, `PM=4`, `Night=3`. Every shift has at least one RN or SeniorRN. Night has at least one SeniorRN. Nobody works two shifts in a day.
+- **Agent loop**: generate one day at a time with a local Ollama model, validate, and feed violations back for up to 3 retries. If it still fails, use the deterministic greedy fallback.
+- **Schedule**: configurable with `Roster:Interval`. The demo uses 2 minutes. Real use is a fortnight (`14.00:00:00`).
+- Window: `Roster:WindowDays`, 3 for the demo and 14 for production.
+- **Stack**: C# .NET 8 Worker Service, EF Core with SQLite, OllamaSharp / Microsoft.Extensions.AI, Docker Compose (agent and ollama).
+- **Persistence**: assignments are regenerated each run, and a `RosterRun` row records attempts and whether the fallback was used.
 
-**Constraints implemented**
+**Design decision**: the LLM only proposes and C# decides. Small local models miscount, so correctness lives in the validator, not the prompt.
 
-- Timeslot capacity: AM = 5, PM = 4, Night = 3
-- Skillmix: every shift needs at least one RN or SeniorRN; Night needs at least one SeniorRN
-- One shift per person per day
+**How to run**: 
 
-**Known limits / out of scope**
+> Pull the model first: ollama pull llama3.2:3b.
 
-- No days off, leave, or preferences
-- No UI or API
-- Single ward, hardcoded staff
-- Regenerates the window each run instead of rolling it forward
-- SQLite only; Postgres swap is a later branch
+```bash
+dotnet run
+```
+
+or
+
+```bash
+docker compose up --build
+```
+
+**Known limitations**
+
+- No leave, preferences, fairness balancing, or rest-day rules.
+- Each run replaces the previous roster with no history or versioning.
+- Day-by-day generation ignores the previous day’s shifts (for example Night followed by AM).
+- SQLite only, single process, no auth or UI.
+
+**Next steps**
+
+- Rest rules (no Night followed by AM).
+- Fairness and workload balancing.
+- Leave and availability.
+- Postgres.
+- Run history and a diff view.
+- A roster viewer or API.
+- Tests for the retry loop with a mocked `IChatClient`.
 
 ---
 
