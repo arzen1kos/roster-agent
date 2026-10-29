@@ -15,24 +15,37 @@
 
 </div>
 
-## Branch Notes: `dev`
+## Branch Notes: `feature/ward-roster-agent-lab`
 
-**Purpose**: Shared integration branch. Holds the latest working state of RosterLab. Feature branches are merged here first. Nothing is released from here directly.
+**Branched from:** `dev`
 
-**Rules**
+**Merges into:** `dev`
 
-- Always builds (`dotnet build`) and tests pass (`dotnet test`).
-- No direct commits except trivial fixes (docs, typos). Use a feature branch and merge.
-- Merge feature branches with a PR (or `--no-ff` merge if working solo) so history shows each feature.
-- Delete the feature branch after merging.
+**Goal**
+A simple agent lab that updates a single ward's roster on a timer. Real cadence is fortnightly (`14.00:00:00`); demo cadence is every 2 minutes (`00:02:00`). Staff names and dates are hardcoded for now.
 
-**Contents**
+> The LLM proposes, plain C# validates, retry up to 3 times, then fall back to a deterministic greedy roster.
 
-- .NET 8 Worker Service skeleton
-- SQLite database with seeded staff
-- Roster rules and validator
-- Ollama-backed roster agent with retry and greedy fallback
-- Dockerfile and docker-compose (Ollama + agent)
+**Configuration**
+| Setting | Real | Demo |
+|---|---|---|
+| `Roster:Interval` | `14.00:00:00` | `00:02:00` |
+| `Roster:WindowDays` | 14 | 3 |
+| `Ollama:Model` | `llama3.1:8b` | `llama3.2:3b` |
+
+**Constraints implemented**
+
+- Timeslot capacity: AM = 5, PM = 4, Night = 3
+- Skillmix: every shift needs at least one RN or SeniorRN; Night needs at least one SeniorRN
+- One shift per person per day
+
+**Known limits / out of scope**
+
+- No days off, leave, or preferences
+- No UI or API
+- Single ward, hardcoded staff
+- Regenerates the window each run instead of rolling it forward
+- SQLite only; Postgres swap is a later branch
 
 ---
 
