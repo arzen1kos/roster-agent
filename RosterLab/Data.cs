@@ -22,13 +22,15 @@ public class Assignment {
     public Slot Slot { get; set; } 
     public int StaffId { get; set; } 
 }
-public class RosterRun { 
-    public int Id { get; set; } 
-    public DateTimeOffset RanAt { get; set; } 
-    public int Attempts { get; set; } 
-    public bool UsedFallback { get; set; } 
+public class RosterRun
+{
+    public int Id { get; set; }
+    public DateTimeOffset RanAt { get; set; }
+    public DateOnly WindowStart { get; set; }
+    public DateOnly WindowEnd { get; set; }
+    public int Attempts { get; set; }
+    public bool UsedFallback { get; set; }
 }
-
 public class RosterDb(DbContextOptions<RosterDb> o) : DbContext(o)
 {
     public DbSet<Staff> Staff => Set<Staff>();

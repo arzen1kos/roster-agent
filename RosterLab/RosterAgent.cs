@@ -9,8 +9,9 @@ public class RosterAgent(RosterDb db, IChatClient chat, ILogger<RosterAgent> log
     public async Task RunAsync(int windowDays, CancellationToken ct)
     {
         var staff = await db.Staff.ToListAsync(ct);
-        var start = DateOnly.FromDateTime(DateTime.Today);
-        db.Assignments.RemoveRange(db.Assignments);   // regenerate the window each tick
+        var last = await db.Runs.OrderByDescending(r => r.Id).FirstOrDefaultAsync(ct);
+        var start = last is null ? DateOnly.FromDateTime(DateTime.Today) : last.WindowEnd.AddDays(1);
+        var end = start.AddDays(windowDays - 1);
         int attempts = 0; bool fallback = false;
 
         for (int d = 0; d < windowDays; d++)
@@ -27,21 +28,28 @@ public class RosterAgent(RosterDb db, IChatClient chat, ILogger<RosterAgent> log
                 if (proposal is not null && problems.Count == 0) good = proposal;
                 else log.LogWarning("{Day} try {T} failed: {P}", day, t + 1, string.Join("; ", problems));
             }
-            if (good is null) { good = Rules.Greedy(d, staff); fallback = true; }
+            if (good is null) { good = Rules.Greedy(day.DayNumber, staff); fallback = true; }
 
             foreach (var (slot, ids) in good)
                 foreach (var id in ids)
                     db.Assignments.Add(new Assignment { Date = day, Slot = slot, StaffId = id });
         }
 
-        db.Runs.Add(new RosterRun { RanAt = DateTimeOffset.Now, Attempts = attempts, UsedFallback = fallback });
+        db.Runs.Add(new RosterRun {
+            RanAt = DateTimeOffset.Now, WindowStart = start, WindowEnd = end,
+            Attempts = attempts, UsedFallback = fallback
+        });
+        
         await db.SaveChangesAsync(ct);
         log.LogInformation("Roster updated. LLM attempts: {A}, fallback used: {F}", attempts, fallback);
     }
 
     async Task<Dictionary<Slot, List<int>>?> Propose(List<Staff> staff, DateOnly day, List<string> problems, CancellationToken ct)
     {
-        var list = string.Join("\n", staff.Select(s => $"{s.Id} | {s.Name} | {s.Skill}"));
+        var list = string.Join("\n", staff
+            .OrderBy(s => (s.Id * 7 + day.DayNumber) % 13)
+            .Select(s => $"{s.Id} | {s.Name} | {s.Skill}"));
+
         var fix = problems.Count > 0 ? "\nYour last answer broke these rules. Fix them:\n" + string.Join("\n", problems) : "";
         var prompt = $"""
             You are rostering one hospital ward for {day:yyyy-MM-dd}.
@@ -53,13 +61,14 @@ public class RosterAgent(RosterDb db, IChatClient chat, ILogger<RosterAgent> log
             - Every shift needs at least one RN or SeniorRN.
             - Night needs at least one SeniorRN.
             - Each person works at most ONE shift today.
+            - Rotate people fairly; don’t always pick the first names in the list.
             Reply with JSON only, using staff ids, like this: {Example}
             {fix}
             """;
         try
         {
             var r = await chat.GetResponseAsync(prompt,
-                new ChatOptions { ResponseFormat = ChatResponseFormat.Json, Temperature = 0.2f }, ct);
+                new ChatOptions { ResponseFormat = ChatResponseFormat.Json, Temperature = 0.5f }, ct);
             var raw = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(r.Text);
             return raw!.ToDictionary(k => Enum.Parse<Slot>(k.Key, true), k => k.Value);
         }
