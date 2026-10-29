@@ -1,7 +1,7 @@
 <div align="center">
    <img width="100" height="100" alt="kronos-app-logo" title="Kronos | Roster Orchestration Agent" src="https://github.com/user-attachments/assets/28d1ef66-3b9c-4151-9dda-f36d3451b978" />
   
-# Ward Roster Lab
+# KronOS | Ward Roster Lab
 
 ![C#](https://custom-icon-badges.demolab.com/badge/C%23-%23662D91.svg?style=for-the-badge&logo=cshrp&logoColor=white)
 ![.NET MAUI](https://img.shields.io/badge/.NET_MAUI-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
@@ -10,6 +10,8 @@
 ![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
 
 ~✦~
+
+`KronOS` is a small AI agent that automatically builds a hospital ward’s roster on a timer (fortnightly in real use, every 2 minutes for demos). A local LLM (Ollama) proposes the shifts, and a C# rules engine checks capacity (AM 5, PM 4, Night 3) and skillmix, retrying or falling back to a rule-based roster if the proposal is wrong.
 
 </div>
 
