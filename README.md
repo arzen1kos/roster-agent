@@ -13,17 +13,24 @@
 
 </div>
 
-## Branch Notes: `main`
+## Branch Notes: `dev`
 
-**Purpose**: Primary integration branch for active development. Features, fixes, and refactors are merged here before being promoted to production.
+**Purpose**: Shared integration branch. Holds the latest working state of RosterLab. Feature branches are merged here first. Nothing is released from here directly.
 
-**Notes**
+**Rules**
 
-- Keep builds passing.
-- Merge tested work only.
-- Sync regularly with main.
+- Always builds (`dotnet build`) and tests pass (`dotnet test`).
+- No direct commits except trivial fixes (docs, typos). Use a feature branch and merge.
+- Merge feature branches with a PR (or `--no-ff` merge if working solo) so history shows each feature.
+- Delete the feature branch after merging.
 
-**Status**: Building the core agentic engine (In Progress)
+**Contents (once the feature below is merged)**
+
+- .NET 8 Worker Service skeleton
+- SQLite database with seeded staff
+- Roster rules and validator
+- Ollama-backed roster agent with retry and greedy fallback
+- Dockerfile and docker-compose (Ollama + agent)
 
 ---
 
