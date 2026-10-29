@@ -1,0 +1,14 @@
+services:
+  ollama:
+    image: ollama/ollama
+    ports: ["11434:11434"]
+    volumes: [ollama:/root/.ollama]
+  agent:
+    build: .
+    depends_on: [ollama]
+    environment:
+      Ollama__Url: http://ollama:11434
+      Roster__Interval: "00:02:00"
+      ConnectionStrings__Db: "Data Source=/data/roster.db"
+    volumes: [data:/data]
+volumes: { ollama: {}, data: {} }

@@ -15,24 +15,59 @@
 
 </div>
 
-## Branch Notes: `dev`
+## Branch Notes: `lab/roster-lab`
 
-**Purpose**: Shared integration branch. Holds the latest working state of RosterLab. Feature branches are merged here first. Nothing is released from here directly.
+**Branched from:** `dev`
 
-**Rules**
+**Merges into:** `dev`
 
-- Always builds (`dotnet build`) and tests pass (`dotnet test`).
-- No direct commits except trivial fixes (docs, typos). Use a feature branch and merge.
-- Merge feature branches with a PR (or `--no-ff` merge if working solo) so history shows each feature.
-- Delete the feature branch after merging.
+**Purpose**
+A proof of concept for an agentic roster updater for a single ward. On a timer, an LLM proposes a roster. Deterministic C# rules check it, and the agent retries until it’s valid. This is the base for later work, not a finished product.
 
-**Contents**
+**Details**
 
-- .NET 8 Worker Service skeleton
-- SQLite database with seeded staff
-- Roster rules and validator
-- Ollama-backed roster agent with retry and greedy fallback
-- Dockerfile and docker-compose (Ollama + agent)
+- **Scope**: single ward, hardcoded staff (18 names with skill levels) and hardcoded rules.
+- **Constraints**: slot capacity `AM=5`, `PM=4`, `Night=3`. Every shift has at least one RN or SeniorRN. Night has at least one SeniorRN. Nobody works two shifts in a day.
+- **Agent loop**: generate one day at a time with a local Ollama model, validate, and feed violations back for up to 3 retries. If it still fails, use the deterministic greedy fallback.
+- **Schedule**: configurable with `Roster:Interval`. The demo uses 2 minutes. Real use is a fortnight (`14.00:00:00`).
+- Window: `Roster:WindowDays`, 3 for the demo and 14 for production.
+- **Stack**: C# .NET 8 Worker Service, EF Core with SQLite, OllamaSharp / Microsoft.Extensions.AI, Docker Compose (agent and ollama).
+- **Persistence**: assignments are regenerated each run, and a `RosterRun` row records attempts and whether the fallback was used.
+
+**Status**: Merged to `dev`
+
+## **Design decision**: the LLM only proposes and C# decides. Small local models miscount, so correctness lives in the validator, not the prompt.
+
+## **How to run**
+
+> Pull the model first: ollama pull llama3.2:3b.
+
+```bash
+dotnet run
+```
+
+or
+
+```bash
+docker compose up --build
+```
+
+**Known limitations**
+
+- No leave, preferences, fairness balancing, or rest-day rules.
+- Each run replaces the previous roster with no history or versioning.
+- Day-by-day generation ignores the previous day’s shifts (for example Night followed by AM).
+- SQLite only, single process, no auth or UI.
+
+**Next steps**
+
+- Rest rules (no Night followed by AM).
+- Fairness and workload balancing.
+- Leave and availability.
+- Postgres.
+- Run history and a diff view.
+- A roster viewer or API.
+- Tests for the retry loop with a mocked `IChatClient`.
 
 ---
 
