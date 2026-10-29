@@ -24,7 +24,7 @@
 - Merge feature branches with a PR (or `--no-ff` merge if working solo) so history shows each feature.
 - Delete the feature branch after merging.
 
-**Contents (once the feature below is merged)**
+**Contents**
 
 - .NET 8 Worker Service skeleton
 - SQLite database with seeded staff
