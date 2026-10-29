@@ -34,9 +34,11 @@ A proof of concept for an agentic roster updater for a single ward. On a timer, 
 - **Stack**: C# .NET 8 Worker Service, EF Core with SQLite, OllamaSharp / Microsoft.Extensions.AI, Docker Compose (agent and ollama).
 - **Persistence**: assignments are regenerated each run, and a `RosterRun` row records attempts and whether the fallback was used.
 
-**Design decision**: the LLM only proposes and C# decides. Small local models miscount, so correctness lives in the validator, not the prompt.
+**Status**: Merged to `dev`
 
-**How to run**: 
+## **Design decision**: the LLM only proposes and C# decides. Small local models miscount, so correctness lives in the validator, not the prompt.
+
+## **How to run**
 
 > Pull the model first: ollama pull llama3.2:3b.
 
